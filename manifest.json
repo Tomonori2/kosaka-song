@@ -1,0 +1,14 @@
+{
+  "name": "高坂ソング",
+  "short_name": "高坂ソング",
+  "description": "高坂先生のオリジナル曲集",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#3a1c5e",
+  "theme_color": "#3a1c5e",
+  "icons": [
+    { "src": "icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

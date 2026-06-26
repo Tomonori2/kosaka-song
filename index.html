@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高坂ソング</title>
+  <!-- スマホアプリ化（PWA）用 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3a1c5e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="高坂ソング">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      min-height: 100vh; color: #fff;
+      background: linear-gradient(160deg, #3a1c5e 0%, #5e2c8e 40%, #c0392b 100%);
+      padding: 24px 16px 60px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    header { text-align: center; margin-bottom: 24px; }
+    header .icon-img {
+      width: 96px; height: 96px; object-fit: cover; border-radius: 24px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    }
+    header h1 {
+      font-size: 28px; margin-top: 12px; letter-spacing: 2px;
+      background: linear-gradient(90deg, #ffd93d, #ff6b6b, #4ecdc4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    header p { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 6px; }
+
+    /* いま再生中 */
+    .now {
+      width: 100%; max-width: 560px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px; padding: 22px; margin-bottom: 18px; text-align: center;
+      backdrop-filter: blur(8px);
+    }
+    .now .disc {
+      width: 130px; height: 130px; margin: 0 auto 16px; border-radius: 50%;
+      background: radial-gradient(circle at center, #1a1a1a 22%, #333 23%, #222 60%, #111 61%);
+      display: flex; align-items: center; justify-content: center; font-size: 44px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    .now .disc.spin { animation: spin 4s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .now .title { font-size: 19px; font-weight: bold; min-height: 26px; }
+
+    /* シークバー */
+    .bar { background: rgba(255,255,255,0.2); border-radius: 10px; height: 6px; margin: 16px 0 4px; cursor: pointer; }
+    .bar #fill { background: linear-gradient(90deg,#ffd93d,#ff6b6b); height: 6px; border-radius: 10px; width: 0%; }
+    .times { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.7); }
+
+    /* 操作ボタン */
+    .ctrl { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 16px; }
+    .ctrl button { border: none; background: none; color: #fff; cursor: pointer; }
+    .ctrl .side { font-size: 26px; opacity: 0.9; }
+    .ctrl .play {
+      width: 64px; height: 64px; border-radius: 50%; font-size: 26px;
+      background: linear-gradient(135deg,#ff6b6b,#ffd93d); color: #fff;
+      box-shadow: 0 4px 14px rgba(255,107,107,0.5);
+    }
+    .vol { display: flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; }
+    .vol input { flex: 1; accent-color: #ffd93d; }
+
+    /* 曲リスト */
+    .list { width: 100%; max-width: 560px; }
+    .list .label { font-size: 12px; color: rgba(255,255,255,0.7); margin: 4px 0 10px; letter-spacing: 1px; }
+    .song {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 8px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px; cursor: pointer; transition: background 0.15s;
+    }
+    .song:hover { background: rgba(255,255,255,0.16); }
+    .song.active { background: rgba(255,217,61,0.22); border-color: rgba(255,217,61,0.5); }
+    .song .num { font-size: 13px; color: rgba(255,255,255,0.6); width: 20px; }
+    .song .name { font-size: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="icon-img" src="icon.png" alt="高坂先生" onerror="this.outerHTML='<div style=\'font-size:80px\'>🎵</div>'">
+    <h1>高坂ソング</h1>
+    <p>高坂先生のオリジナル曲集 🎶 ピポパポ！</p>
+  </header>
+
+  <!-- いま再生中 -->
+  <div class="now">
+    <div class="disc" id="disc">🎵</div>
+    <div class="title" id="now-title">曲を選んでね</div>
+    <div class="bar" onclick="seek(event)"><div id="fill"></div></div>
+    <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    <div class="ctrl">
+      <button class="side" onclick="prev()">⏮</button>
+      <button class="play" id="play-btn" onclick="togglePlay()">▶️</button>
+      <button class="side" onclick="next()">⏭</button>
+    </div>
+    <div class="vol">
+      <span>🔈</span>
+      <input type="range" min="0" max="1" step="0.05" value="1" onchange="setVol(this.value)">
+      <span>🔊</span>
+    </div>
+  </div>
+
+  <!-- 曲リスト -->
+  <div class="list">
+    <div class="label">🎶 プレイリスト</div>
+    <div id="song-list"></div>
+  </div>
+
+  <audio id="audio" ontimeupdate="onTime()" onended="next()" onplay="onPlayState(true)" onpause="onPlayState(false)"></audio>
+
+  <script>
+    var songs = [
+      { title: '🌺 島の歌',          file: '島の歌.mp3' },
+      { title: '🔥 燃えろ！こうさか', file: '燃えろ！こうさか.mp3' },
+      { title: '✨ Celebrate Tonight', file: 'Celebrate Tonight.mp3' },
+      { title: '🏙️ NAGOYA CITY',      file: 'NAGOYA CITY.mp3' },
+      { title: '✈️ 低空飛行',          file: '低空飛行.mp3' }
+    ];
+    var audio = document.getElementById('audio');
+    var current = -1;
+
+    // リスト描画
+    var listEl = document.getElementById('song-list');
+    songs.forEach(function (s, i) {
+      var div = document.createElement('div');
+      div.className = 'song';
+      div.id = 'song-' + i;
+      div.onclick = function () { playSong(i); };
+      div.innerHTML = '<span class="num">' + (i + 1) + '</span><span class="name">' + s.title + '</span>';
+      listEl.appendChild(div);
+    });
+
+    function playSong(i) {
+      current = i;
+      audio.src = 'songs/' + encodeURIComponent(songs[i].file);
+      audio.play();
+      document.getElementById('now-title').textContent = songs[i].title;
+      songs.forEach(function (_, j) {
+        document.getElementById('song-' + j).classList.toggle('active', j === i);
+      });
+    }
+
+    function togglePlay() {
+      if (current === -1) { playSong(0); return; }
+      if (audio.paused) audio.play(); else audio.pause();
+    }
+    function prev() { if (current > 0) playSong(current - 1); else playSong(songs.length - 1); }
+    function next() { if (current < songs.length - 1) playSong(current + 1); else playSong(0); }
+
+    function onPlayState(playing) {
+      document.getElementById('play-btn').textContent = playing ? '⏸' : '▶️';
+      document.getElementById('disc').classList.toggle('spin', playing);
+    }
+
+    function fmt(t) {
+      if (isNaN(t)) return '0:00';
+      var m = Math.floor(t / 60), s = Math.floor(t % 60);
+      return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    function onTime() {
+      document.getElementById('cur').textContent = fmt(audio.currentTime);
+      document.getElementById('dur').textContent = fmt(audio.duration);
+      var pct = audio.duration ? (audio.currentTime / audio.duration * 100) : 0;
+      document.getElementById('fill').style.width = pct + '%';
+    }
+    function seek(e) {
+      var box = e.currentTarget.getBoundingClientRect();
+      audio.currentTime = (e.clientX - box.left) / box.width * audio.duration;
+    }
+    function setVol(v) { audio.volume = v; }
+
+    // スマホアプリ化
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
+    }
+  </script>
+</body>
+</html>
