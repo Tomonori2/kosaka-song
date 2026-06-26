@@ -1,6 +1,6 @@
 // 高坂ソング – サービスワーカー（スマホアプリ化用）
 const CACHE = 'kosaka-song-v1';
-const SHELL = ['/', 'index.html', 'manifest.json', 'icon.png'];
+const SHELL = ['index.html', 'manifest.json', 'icon.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
